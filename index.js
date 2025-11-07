@@ -7,9 +7,10 @@ const port = process.env.PORT || 3000;
 
 app.get('/', async (req, res) => {
   const keyword = req.query.q || 'digital planner';
- args: chromium.args,
-    executablePath: await chromium.executablePath(),
-    headless: true
+const browser = await pupp{eteer.launch({
+  args: chromium.args,
+      executablePath: await chromium.executablePath(),
+      headless: true
 
 });
 
