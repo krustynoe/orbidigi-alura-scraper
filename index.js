@@ -7,21 +7,18 @@ const port = process.env.PORT || 3000;
 
 app.get('/', async (req, res) => {
   const keyword = req.query.q || 'digital planner';
-const browser = await pupp{eteer.launch({
-  args: chromium.args,
-      executablePath: await chromium.executablePath(),
-      headless: true
-
-});
-
+  const browser = await puppeteer.launch({
+    args: chromium.args,
+    executablePath: await chromium.executablePath(),
+    headless: true
+  });
   const page = await browser.newPage();
 
-   await page.goto('https://app.alura.io/login');
+  await page.goto('https://app.alura.io/login');
   await page.type('#email', process.env.ALURA_EMAIL);
   await page.type('#password', process.env.ALURA_PASS);
   await page.click("button[type='submit']");
   await page.waitForNavigation();
-
 
   await page.goto('https://app.alura.io/research');
   await page.waitForTimeout(5000); // espera carga real
@@ -35,5 +32,5 @@ const browser = await pupp{eteer.launch({
 });
 
 app.listen(port, () => {
-console.log('Alura scraper live on port ' + port);
+  console.log('Alura scraper live on port ' + port);
 });
