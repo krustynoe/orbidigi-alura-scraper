@@ -8,17 +8,18 @@ app.get('/', async (req, res) => {
   const keyword = req.query.q || 'digital planner';
   const browser = await puppeteer.launch({
   headless: true,
-  executablePath: '/usr/bin/google-chrome',
+  
   args: ['--no-sandbox', '--disable-setuid-sandbox']
 });
 
   const page = await browser.newPage();
 
-  await page.goto('https://app.alura.io/login');
-  await page.type('#email', 'TU_CORREO');
-  await page.type('#password', 'TU_PASSWORD');
-  await page.click('button[type=\"submit\"]');
+   await page.goto('https://app.alura.io/login');
+  await page.type('#email', process.env.ALURA_EMAIL);
+  await page.type('#password', process.env.ALURA_PASS);
+  await page.click("button[type='submit']");
   await page.waitForNavigation();
+
 
   await page.goto('https://app.alura.io/research');
   await page.waitForTimeout(5000); // espera carga real
@@ -32,5 +33,5 @@ app.get('/', async (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Scraper en vivo en puerto ${port}`);
+console.log('Alura scraper live on port ' + port);
 });
