@@ -1,15 +1,16 @@
 const express = require('express');
-const puppeteer = require('puppeteer');
+cconst puppeteer = require('puppeteer-core');
+const chromium = require('@sparticuz/chromium');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.get('/', async (req, res) => {
   const keyword = req.query.q || 'digital planner';
-  const browser = await puppeteer.launch({
-  headless: true,
-  
-  args: ['--no-sandbox', '--disable-setuid-sandbox']
+ args: chromium.args,
+    executablePath: await chromium.executablePath(),
+    headless: true
+
 });
 
   const page = await browser.newPage();
