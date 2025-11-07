@@ -1,4 +1,4 @@
-const express = require('express');
+cost express = require('express');
 const puppeteer = require('puppeteer-core');
 const chromium = require('@sparticuz/chromium');
 
@@ -34,13 +34,15 @@ app.get('/', async (req, res) => {
         }
       }
       if (cookies.length) {
-        await page.setCookie(...cookies);
+            await page.goto('https://app.alura.io', { waitUntil: 'networkidle2' });
+       await page.setCookie(...cookies);
+            await page.reload({ waitUntil: 'networkidle2' });
       }
     } catch (err) {
       console.error('Failed to parse ALURA_COOKIES', err);
     }
-  } else {
-    await page.goto('https://app.alura.io/login');
+    } else {
+    await page.goto('https://app.alura.io/sign-in');
     await page.type('#email', process.env.ALURA_EMAIL);
     await page.type('#password', process.env.ALURA_PASS);
     await page.click("button[type='submit']");
