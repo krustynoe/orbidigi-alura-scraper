@@ -14,11 +14,38 @@ app.get('/', async (req, res) => {
   });
   const page = await browser.newPage();
 
-  await page.goto('https://app.alura.io/login');
-  await page.type('#email', process.env.ALURA_EMAIL);
-  await page.type('#password', process.env.ALURA_PASS);
-  await page.click("button[type='submit']");
-  await page.waitForNavigation();
+  const cookiesString = process.env.ALURA_COOKIES || '';
+  if (cookiesString.trim()) {
+    try {
+      const cookies = [];
+      const lines = cookiesString.split(/\r?\n/);
+      for (const line of lines) {
+        if (!line || line.startsWith('#')) continue;
+        const parts = line.split('\t');
+        if (parts.length >= 7) {
+          cookies.push({
+            name: parts[5],
+            value: parts[6],
+            domain: parts[0],
+            path: parts[2],
+            httpOnly: false,
+            secure: parts[3].toUpperCase() === 'TRUE'
+          });
+        }
+      }
+      if (cookies.length) {
+        await page.setCookie(...cookies);
+      }
+    } catch (err) {
+      console.error('Failed to parse ALURA_COOKIES', err);
+    }
+  } else {
+    await page.goto('https://app.alura.io/login');
+    await page.type('#email', process.env.ALURA_EMAIL);
+    await page.type('#password', process.env.ALURA_PASS);
+    await page.click("button[type='submit']");
+    await page.waitForNavigation();
+  }
 
   await page.goto('https://app.alura.io/research');
   await page.waitForTimeout(5000); // espera carga real
