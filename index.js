@@ -1,63 +1,63 @@
 const express = require('express');
-const puppeteer = require('puppeteer-core');
-const chromium = require('@sparticuz/chromium');
+const axios = require('axios');
+const cheerio = require('cheerio');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.get('/', async (req, res) => {
   const keyword = req.query.q || 'digital planner';
-  const browser = await puppeteer.launch({
-    args: chromium.args,
-    executablePath: await chromium.executablePath(),
-    headless: true
-  });
-  const page = await browser.newPage();
+  const apiKey = process.env.ZENROWS_API_KEY;
+  const cookiesString = process.env.ALURA_COOKIES || process.env.ALURA_COOKIE || '';
 
-  const cookiesString = process.env.ALURA_COOKIES || '';
-  if (cookiesString.trim()) {
-    try {
-      const cookies = [];
-      const lines = cookiesString.split(/\r?\n/);
-      for (const line of lines) {
-        if (!line || line.startsWith('#')) continue;
-        const parts = line.split('\t');
-        if (parts.length >= 7) {
-          cookies.push({
-            name: parts[5],
-            value: parts[6],
-            domain: parts[0],
-            path: parts[2],
-            httpOnly: false,
-            secure: parts[3].toUpperCase() === 'TRUE'
-          });
-        }
+  let cookieHeader = '';
+  if (cookiesString && cookiesString.trim()) {
+    const lines = cookiesString.split(/\r?\n/);
+    const cookiePairs = [];
+    for (const line of lines) {
+      if (!line || line.startsWith('#')) continue;
+      const parts = line.split('\t');
+      if (parts.length >= 7) {
+        cookiePairs.push(`${parts[5]}=${parts[6]}`);
       }
-      if (cookies.length) {
-            await page.goto('https://app.alura.io', { waitUntil: 'networkidle2' });
-       await page.setCookie(...cookies);
-            await page.reload({ waitUntil: 'networkidle2' });
-      }
-    } catch (err) {
-      console.error('Failed to parse ALURA_COOKIES', err);
     }
-    } else {
-    await page.goto('https://app.alura.io/sign-in');
-    await page.type('#email', process.env.ALURA_EMAIL);
-    await page.type('#password', process.env.ALURA_PASS);
-    await page.click("button[type='submit']");
-    await page.waitForNavigation();
+    if (cookiePairs.length > 0) {
+      cookieHeader = cookiePairs.join('; ');
+    }
   }
 
-  await page.goto('https://app.alura.io/research');
-  await page.waitForTimeout(5000); // espera carga real
+  const url = 'https://app.alura.io/research';
 
-  const result = await page.evaluate(() => {
-    return [...document.querySelectorAll('h3')].map(el => el.innerText);
-  });
+  const params = {
+    apikey: apiKey,
+    url: url,
+    js_render: 'true',
+    css_extractor: 'h3'
+  };
 
-  await browser.close();
-  res.json({ keyword, result });
+  const headers = {};
+  if (cookieHeader) {
+    params.custom_headers = true;
+    headers['Cookie'] = cookieHeader;
+  }
+
+  try {
+    const response = await axios.get('https://api.zenrows.com/v1/', { params, headers });
+    if (response.data && response.data.results && response.data.results.h3) {
+      return res.json({ keyword, result: response.data.results.h3 });
+    }
+
+    const html = response.data;
+    const $ = cheerio.load(html);
+    const result = [];
+    $('h3').each((_, el) => {
+      result.push($(el).text().trim());
+    });
+    return res.json({ keyword, result });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message || 'Error fetching data' });
+  }
 });
 
 app.listen(port, () => {
