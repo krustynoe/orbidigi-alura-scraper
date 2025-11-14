@@ -5,12 +5,13 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const soraCookie = process.env.SORA_COOKIES;
 
-// Validación mínima de cookie
+// Validar cookie
 if (!soraCookie || soraCookie.length < 100 || soraCookie.includes('\n')) {
   console.error('❌ Cookie inválida.');
   process.exit(1);
 }
 
+// Parseo de cookies
 function parseCookies(cookieStr) {
   return cookieStr.split(';').map(c => {
     const [name, ...rest] = c.trim().split('=');
@@ -30,31 +31,24 @@ app.get('/generate', async (req, res) => {
 
   try {
     const browser = await puppeteer.launch({
+      executablePath: '/usr/bin/chromium-browser',
       headless: 'new',
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
+
     const page = await browser.newPage();
 
-    // Cargar cookies
     const cookies = parseCookies(soraCookie);
     await page.setCookie(...cookies);
 
-    // Ir a la página de Sora
     await page.goto('https://sora.chatgpt.com', { waitUntil: 'domcontentloaded' });
 
-    // Esperar que cargue el input de prompt
     await page.waitForSelector('textarea', { timeout: 15000 });
-
-    // Insertar el prompt
     await page.type('textarea', prompt, { delay: 10 });
-
-    // Click en el botón de enviar
     await page.keyboard.press('Enter');
 
-    // Esperar respuesta (espera básica)
     await page.waitForTimeout(8000);
 
-    // Obtener texto generado (ajustar selector según respuesta de Sora)
     const respuesta = await page.evaluate(() => {
       const elementos = Array.from(document.querySelectorAll('[data-message-author-role="assistant"] div'));
       return elementos.map(el => el.innerText).join('\n---\n');
@@ -75,5 +69,5 @@ app.get('/generate', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🧠 Flujo activo en /generate?prompt=...`);
+  console.log(`🚀 Flujo Puppeteer iniciado en http://localhost:${PORT}/generate`);
 });
