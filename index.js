@@ -10,7 +10,6 @@ if (!soraCookie || soraCookie.length < 100 || soraCookie.includes('\n')) {
   process.exit(1);
 }
 
-// Convertir string de cookie a array Puppeteer
 function parseCookies(cookieStr) {
   return cookieStr.split(';').map(c => {
     const [name, ...rest] = c.trim().split('=');
@@ -30,7 +29,7 @@ app.get('/generate', async (req, res) => {
 
   try {
     const browser = await puppeteer.launch({
-      executablePath: '/usr/bin/chromium-browser',
+      executablePath: '/usr/bin/chromium', // ← CORREGIDO AQUÍ
       headless: 'new',
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
@@ -45,7 +44,7 @@ app.get('/generate', async (req, res) => {
     await page.type('textarea', prompt, { delay: 10 });
     await page.keyboard.press('Enter');
 
-    await page.waitForTimeout(8000); // puedes ampliar si tarda más
+    await page.waitForTimeout(8000);
 
     const respuesta = await page.evaluate(() => {
       const bloques = Array.from(document.querySelectorAll('[data-message-author-role="assistant"] div'));
@@ -59,6 +58,7 @@ app.get('/generate', async (req, res) => {
       prompt,
       response: respuesta || '⚠️ No se detectó respuesta del sistema.'
     });
+
   } catch (err) {
     console.error('❌ Error en Puppeteer:', err.message);
     res.status(500).json({ error: err.message });
