@@ -1,5 +1,5 @@
 const express = require('express');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -29,6 +29,7 @@ app.get('/generate', async (req, res) => {
 
   try {
     const browser = await puppeteer.launch({
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
       headless: 'new',
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
@@ -43,7 +44,7 @@ app.get('/generate', async (req, res) => {
     await page.type('textarea', prompt, { delay: 10 });
     await page.keyboard.press('Enter');
 
-    await page.waitForTimeout(8000);
+    await page.waitForTimeout(10000);
 
     const respuesta = await page.evaluate(() => {
       const bloques = Array.from(document.querySelectorAll('[data-message-author-role="assistant"] div'));
@@ -65,5 +66,5 @@ app.get('/generate', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🧠 Servidor Puppeteer funcionando en http://localhost:${PORT}/generate`);
+  console.log(`🧠 Sora backend activo en http://localhost:${PORT}/generate`);
 });
