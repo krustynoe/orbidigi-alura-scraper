@@ -1,5 +1,5 @@
 const express = require('express');
-const puppeteer = require('puppeteer-core');
+const puppeteer = require('puppeteer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -29,7 +29,6 @@ app.get('/generate', async (req, res) => {
 
   try {
     const browser = await puppeteer.launch({
-      executablePath: '/usr/bin/chromium', // ← CORREGIDO AQUÍ
       headless: 'new',
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
@@ -66,5 +65,5 @@ app.get('/generate', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🧠 Servidor Puppeteer-Core activo en http://localhost:${PORT}/generate`);
+  console.log(`🧠 Servidor Puppeteer funcionando en http://localhost:${PORT}/generate`);
 });
