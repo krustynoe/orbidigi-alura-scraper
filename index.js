@@ -1,17 +1,23 @@
 const express = require('express');
-const { chromium } = require('@playwright/test');
+const puppeteer = require('puppeteer-core');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const soraCookie = process.env.SORA_COOKIES;
 
-// Validación de cookie
+const CHROME_PATH = process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium';
+
+if (!fs.existsSync(CHROME_PATH)) {
+  console.error('❌ Chromium no encontrado en:', CHROME_PATH);
+  process.exit(1);
+}
+
 if (!soraCookie || soraCookie.length < 50 || soraCookie.includes('\n')) {
   console.error('❌ Cookie inválida o mal formateada.');
   process.exit(1);
 }
 
-// Convierte string en cookies Playwright
 function parseCookies(cookieStr) {
   return cookieStr.split(';').map(c => {
     const [name, ...rest] = c.trim().split('=');
@@ -20,39 +26,36 @@ function parseCookies(cookieStr) {
       value: rest.join('='),
       domain: '.sora.chatgpt.com',
       path: '/',
-      secure: true,
-      httpOnly: false,
-      sameSite: 'Lax'
+      secure: true
     };
   });
 }
 
-// Endpoint principal
 app.get('/generate', async (req, res) => {
   const prompt = req.query.prompt;
-  if (!prompt) return res.status(400).json({ error: '❌ Falta el parámetro ?prompt=' });
+  if (!prompt) return res.status(400).json({ error: "❌ Falta el parámetro ?prompt=" });
 
   try {
-    const browser = await chromium.launch({
+    const browser = await puppeteer.launch({
+      executablePath: CHROME_PATH,
       headless: true,
-      args: ['--no-sandbox']
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
 
-    const context = await browser.newContext();
-    await context.addCookies(parseCookies(soraCookie));
+    const page = await browser.newPage();
+    await page.setCookie(...parseCookies(soraCookie));
 
-    const page = await context.newPage();
     await page.goto('https://sora.chatgpt.com', { waitUntil: 'domcontentloaded' });
 
     await page.waitForSelector('textarea', { timeout: 15000 });
     await page.type('textarea', prompt, { delay: 10 });
     await page.keyboard.press('Enter');
 
-    await page.waitForTimeout(10000); // espera para la respuesta
+    await page.waitForTimeout(10000);
 
     const respuesta = await page.evaluate(() => {
       const bloques = Array.from(document.querySelectorAll('[data-message-author-role="assistant"] div'));
-      return bloques.map(el => el.innerText).join("\n---\n");
+      return bloques.map(el => el.innerText).join('\n---\n');
     });
 
     await browser.close();
@@ -60,15 +63,15 @@ app.get('/generate', async (req, res) => {
     res.json({
       status: "ok",
       prompt,
-      response: respuesta || "⚠️ No se detectó respuesta del sistema."
+      response: respuesta || "⚠️ No se detectó respuesta."
     });
 
   } catch (err) {
-    console.error("❌ Error en Playwright:", err.message);
+    console.error("❌ Error en Puppeteer:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
 app.listen(PORT, () => {
-  console.log(`🧠 Backend Playwright activo en http://localhost:${PORT}/generate`);
+  console.log(`✅ Backend Puppeteer listo en http://localhost:${PORT}/generate`);
 });
