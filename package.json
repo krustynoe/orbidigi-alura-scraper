@@ -1,7 +1,6 @@
 {
   "name": "orbidigi-sora",
   "version": "1.0.0",
-  "description": "Sora Proxy Backend con cookie real",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
