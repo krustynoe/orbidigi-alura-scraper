@@ -37,7 +37,7 @@ app.get('/generate', async (req, res) => {
 
   try {
     const browser = await puppeteer.launch({
-      executablePath: CHROME_PATH,
+      executablePath: '/usr/bin/chromium',
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });

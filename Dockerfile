@@ -1,6 +1,6 @@
 FROM node:20-slim
 
-# Instala Chromium + dependencias necesarias
+# Instalar Chromium y todas las dependencias necesarias para Puppeteer
 RUN apt-get update && apt-get install -y \
   chromium \
   fonts-liberation \
