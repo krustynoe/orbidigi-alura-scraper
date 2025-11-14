@@ -1,21 +1,12 @@
 const express = require('express');
-const puppeteer = require('puppeteer-core');
-const fs = require('fs');
+const puppeteer = require('puppeteer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const soraCookie = process.env.SORA_COOKIES;
 
-// Ruta específica de Chromium en imagen Playwright (confirmada)
-const chromePath = '/ms-playwright/chromium-1106/chrome-linux/chrome';
-
-if (!fs.existsSync(chromePath)) {
-  console.error("❌ No se encontró Chromium en:", chromePath);
-  process.exit(1);
-}
-
 if (!soraCookie || soraCookie.length < 50 || soraCookie.includes('\n')) {
-  console.error('❌ Cookie SORA_COOKIES inválida o mal formateada.');
+  console.error('❌ Cookie inválida o mal formateada.');
   process.exit(1);
 }
 
@@ -38,8 +29,7 @@ app.get('/generate', async (req, res) => {
 
   try {
     const browser = await puppeteer.launch({
-      executablePath: chromePath,
-      headless: true,
+      headless: 'new',
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
 
@@ -64,7 +54,7 @@ app.get('/generate', async (req, res) => {
     res.json({
       status: "ok",
       prompt,
-      response: respuesta || "⚠️ No se detectó respuesta."
+      response: respuesta || "⚠️ No se detectó respuesta del sistema."
     });
 
   } catch (err) {
@@ -74,5 +64,5 @@ app.get('/generate', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🧠 Sora backend activo en http://localhost:${PORT}/generate`);
+  console.log(`🧠 Backend Sora activo en http://localhost:${PORT}/generate`);
 });
