@@ -1,4 +1,3 @@
-# Usa la imagen oficial con Chromium, Firefox y WebKit
 FROM mcr.microsoft.com/playwright:v1.42.1-jammy
 
 WORKDIR /app
