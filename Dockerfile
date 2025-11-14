@@ -5,6 +5,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
+# 🚨 ESTE COMANDO ES CRÍTICO PARA QUE FUNCIONE EN RENDER
+RUN npx playwright install --with-deps
+
 COPY . .
 
 EXPOSE 3000
