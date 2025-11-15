@@ -1,8 +1,7 @@
 FROM node:20-slim
 
-# Instalar Chromium y todas las dependencias necesarias para Puppeteer
 RUN apt-get update && apt-get install -y \
-  chromium \
+  chromium-browser \
   fonts-liberation \
   libasound2 \
   libatk-bridge2.0-0 \
@@ -27,7 +26,7 @@ RUN apt-get update && apt-get install -y \
   --no-install-recommends && \
   apt-get clean && rm -rf /var/lib/apt/lists/*
 
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 WORKDIR /app
 COPY package*.json ./
