@@ -1,36 +1,11 @@
-FROM node:20-slim
-
-RUN apt-get update && apt-get install -y \
-  chromium-browser \
-  fonts-liberation \
-  libasound2 \
-  libatk-bridge2.0-0 \
-  libatk1.0-0 \
-  libcups2 \
-  libdbus-1-3 \
-  libdrm2 \
-  libgbm1 \
-  libgtk-3-0 \
-  libnspr4 \
-  libnss3 \
-  libx11-xcb1 \
-  libxcomposite1 \
-  libxdamage1 \
-  libxfixes3 \
-  libxrandr2 \
-  libxss1 \
-  libxtst6 \
-  xdg-utils \
-  ca-certificates \
-  wget \
-  --no-install-recommends && \
-  apt-get clean && rm -rf /var/lib/apt/lists/*
-
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+FROM mcr.microsoft.com/playwright:v1.42.1-jammy
 
 WORKDIR /app
+
+# Solo instalamos express, no tocamos playwright ni navegadores
 COPY package*.json ./
-RUN npm install
+RUN npm install --only=production
+
 COPY . .
 
 EXPOSE 3000

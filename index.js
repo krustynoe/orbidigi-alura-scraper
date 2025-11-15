@@ -1,19 +1,13 @@
 const express = require('express');
-const puppeteer = require('puppeteer-core');
-const fs = require('fs');
+const { chromium } = require('playwright');  // viene ya en la imagen base
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const soraCookie = process.env.SORA_COOKIES;
-const CHROME_PATH = process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser';
 
-if (!fs.existsSync(CHROME_PATH)) {
-  console.error('❌ Chromium no encontrado en:', CHROME_PATH);
-  process.exit(1);
-}
-
-if (!soraCookie || soraCookie.length < 50 || soraCookie.includes('\n')) {
-  console.error('❌ Cookie inválida o mal formateada.');
+// Validación básica de cookie
+if (!soraCookie || soraCookie.length < 50) {
+  console.error('❌ SORA_COOKIES inválida o demasiado corta.');
   process.exit(1);
 }
 
@@ -25,56 +19,66 @@ function parseCookies(cookieStr) {
       value: rest.join('='),
       domain: '.sora.chatgpt.com',
       path: '/',
-      secure: true
+      secure: true,
+      httpOnly: false,
+      sameSite: 'Lax'
     };
   });
 }
 
 async function openSoraPage(prompt) {
-  const browser = await puppeteer.launch({
-    executablePath: CHROME_PATH,
+  const browser = await chromium.launch({
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
+    args: ['--no-sandbox']
   });
 
-  const page = await browser.newPage();
-  await page.setCookie(...parseCookies(soraCookie));
+  const context = await browser.newContext();
+  await context.addCookies(parseCookies(soraCookie));
 
+  const page = await context.newPage();
   await page.goto('https://sora.chatgpt.com', { waitUntil: 'domcontentloaded' });
+
   await page.waitForSelector('textarea', { timeout: 15000 });
   await page.type('textarea', prompt, { delay: 10 });
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(8000);
+
+  await page.waitForTimeout(8000); // esperar respuesta
 
   return { browser, page };
 }
 
-// /generate – devuelve respuesta JSON
+// /generate → devuelve JSON con el texto de Sora
 app.get('/generate', async (req, res) => {
   const prompt = req.query.prompt;
-  if (!prompt) return res.status(400).json({ error: "❌ Falta el parámetro ?prompt=" });
+  if (!prompt) return res.status(400).json({ error: '❌ Falta el parámetro ?prompt=' });
 
   try {
     const { browser, page } = await openSoraPage(prompt);
 
     const respuesta = await page.evaluate(() => {
-      const bloques = Array.from(document.querySelectorAll('[data-message-author-role="assistant"] div'));
+      const bloques = Array.from(
+        document.querySelectorAll('[data-message-author-role="assistant"] div')
+      );
       return bloques.map(el => el.innerText).join('\n---\n');
     });
 
     await browser.close();
-    res.json({ status: "ok", prompt, response: respuesta || "⚠️ No se detectó respuesta." });
 
+    res.json({
+      status: 'ok',
+      prompt,
+      response: respuesta || '⚠️ No se detectó respuesta.'
+    });
   } catch (err) {
-    console.error("❌ Error en /generate:", err.message);
+    console.error('❌ Error en /generate:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// /screenshot – devuelve imagen PNG de la página
+// /screenshot → PNG de la página
 app.get('/screenshot', async (req, res) => {
   const prompt = req.query.prompt;
-  if (!prompt) return res.status(400).json({ error: "❌ Falta el parámetro ?prompt=" });
+  if (!prompt) return res.status(400).json({ error: '❌ Falta el parámetro ?prompt=' });
 
   try {
     const { browser, page } = await openSoraPage(prompt);
@@ -83,17 +87,16 @@ app.get('/screenshot', async (req, res) => {
 
     res.set('Content-Type', 'image/png');
     res.send(screenshot);
-
   } catch (err) {
-    console.error("❌ Error en /screenshot:", err.message);
+    console.error('❌ Error en /screenshot:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// /html – devuelve el HTML completo de la página
+// /html → HTML completo
 app.get('/html', async (req, res) => {
   const prompt = req.query.prompt;
-  if (!prompt) return res.status(400).json({ error: "❌ Falta el parámetro ?prompt=" });
+  if (!prompt) return res.status(400).json({ error: '❌ Falta el parámetro ?prompt=' });
 
   try {
     const { browser, page } = await openSoraPage(prompt);
@@ -102,13 +105,12 @@ app.get('/html', async (req, res) => {
 
     res.set('Content-Type', 'text/html');
     res.send(html);
-
   } catch (err) {
-    console.error("❌ Error en /html:", err.message);
+    console.error('❌ Error en /html:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
 app.listen(PORT, () => {
-  console.log(`✅ Backend Puppeteer listo en http://localhost:${PORT}`);
+  console.log(`✅ Backend Sora+Playwright activo en http://localhost:${PORT}`);
 });
