@@ -1,5 +1,5 @@
 {
-  "name": "sora-backend",
+  "name": "sora-playwright-backend",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -7,6 +7,6 @@
   },
   "dependencies": {
     "express": "^4.18.2",
-    "puppeteer-core": "^21.3.8"
+    "playwright": "^1.42.1"
   }
 }

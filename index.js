@@ -1,11 +1,10 @@
 const express = require('express');
-const { chromium } = require('playwright');  // viene ya en la imagen base
+const { chromium } = require('playwright');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const soraCookie = process.env.SORA_COOKIES;
 
-// Validación básica de cookie
 if (!soraCookie || soraCookie.length < 50) {
   console.error('❌ SORA_COOKIES inválida o demasiado corta.');
   process.exit(1);
@@ -42,12 +41,12 @@ async function openSoraPage(prompt) {
   await page.type('textarea', prompt, { delay: 10 });
   await page.keyboard.press('Enter');
 
-  await page.waitForTimeout(8000); // esperar respuesta
+  await page.waitForTimeout(8000);
 
   return { browser, page };
 }
 
-// /generate → devuelve JSON con el texto de Sora
+// JSON
 app.get('/generate', async (req, res) => {
   const prompt = req.query.prompt;
   if (!prompt) return res.status(400).json({ error: '❌ Falta el parámetro ?prompt=' });
@@ -63,19 +62,14 @@ app.get('/generate', async (req, res) => {
     });
 
     await browser.close();
-
-    res.json({
-      status: 'ok',
-      prompt,
-      response: respuesta || '⚠️ No se detectó respuesta.'
-    });
+    res.json({ status: 'ok', prompt, response: respuesta || '⚠️ No se detectó respuesta.' });
   } catch (err) {
     console.error('❌ Error en /generate:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// /screenshot → PNG de la página
+// PNG
 app.get('/screenshot', async (req, res) => {
   const prompt = req.query.prompt;
   if (!prompt) return res.status(400).json({ error: '❌ Falta el parámetro ?prompt=' });
@@ -93,7 +87,7 @@ app.get('/screenshot', async (req, res) => {
   }
 });
 
-// /html → HTML completo
+// HTML
 app.get('/html', async (req, res) => {
   const prompt = req.query.prompt;
   if (!prompt) return res.status(400).json({ error: '❌ Falta el parámetro ?prompt=' });
@@ -112,5 +106,5 @@ app.get('/html', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`✅ Backend Sora+Playwright activo en http://localhost:${PORT}`);
+  console.log(`✅ Backend Sora + Playwright activo en http://localhost:${PORT}`);
 });
